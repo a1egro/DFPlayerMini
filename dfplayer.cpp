@@ -2,8 +2,9 @@
 
 #include <iostream>
 #include <cstring>
+#include <utility>
 
-DFPlayer::DFPlayer(std::string port) : last_call(std::chrono::system_clock::now()), serial(new Serial(port)) {
+DFPlayer::DFPlayer(std::string port) : last_call(std::chrono::system_clock::now()), serial(new Serial(std::move(port))) {
     /* setup buffer */
     buff[0] = 0x7e;
     buff[1] = 0xff;
@@ -49,12 +50,12 @@ void DFPlayer::send_cmd(uint8_t cmd) {
 }
 
 // returns pointer to 4 byte large payload
-data_package DFPlayer::recv_payload() {
+__data_package_t DFPlayer::recv_payload() {
     // wait for new data to be read
     serial->req_read();
     while (!serial->has_read());                 // TODO: TIMEOUT (see: tty.c_cc[VTIME])
 
-    struct data_package data;
+    struct __data_package_t data;
     uint8_t *rbuff = serial->get_rbuff();
 
     // 4th byte specifies reason
@@ -68,14 +69,15 @@ data_package DFPlayer::recv_payload() {
 void DFPlayer::cb_caller() {
     uint8_t *rbuff = serial->get_rbuff();
 
+    __recv_message_t msg = static_cast<__recv_message_t> (malloc(PACKAGE_SIZE));
     // 4th byte specifies reason
-    uint8_t reason = rbuff[3];
+    msg->reason = rbuff[3];
     // 6th and 7th are data bytes
-    uint16_t data = (rbuff[5])<<8 | rbuff[6];
+    msg->payload = (rbuff[5])<<8 | rbuff[6];
 
     __df_callable_t callable = nullptr;
 
-    switch(reason) {
+    switch(msg->reason) {
         // track on sd card finished playing
         case 0x3d:
             callable = cb_functions[DF_CBTF];
@@ -83,12 +85,14 @@ void DFPlayer::cb_caller() {
         // error code
         case 0x40:
             callable = cb_functions[DF_CBEO];
+            break;
         default:
+            callable = cb_functions[DF_CBAN];
             break;
     }
 
     // call function if one is assigned
-    if (callable) callable(data);
+    if (callable) callable(msg);
 }
 
 bool DFPlayer::is_playing() {
@@ -147,20 +151,28 @@ void DFPlayer::vol_set(uint16_t volume) {
     send_cmd(0x06, volume);
 }
 
-void DFPlayer::setcb_tfin(std::function<void(int)> func) {
+void DFPlayer::setcb_trackfin(__df_callable_t func) {
     cb_functions[DF_CBTF] = func;
 }
 
-void DFPlayer::clearcb_tfin() {
+void DFPlayer::clearcb_trackfin() {
     cb_functions[DF_CBTF] = nullptr;
 }
 
-void DFPlayer::setcb_erroc(std::function<void(int)> func) {
+void DFPlayer::setcb_erroc(__df_callable_t func) {
     cb_functions[DF_CBEO] = func;
 }
 
 void DFPlayer::clearcb_erroc() {
     cb_functions[DF_CBEO] = nullptr;
+}
+
+void DFPlayer::setcb_any(__df_callable_t func) {
+    cb_functions[DF_CBAN] = func;
+}
+
+void DFPlayer::clearcb_any() {
+    cb_functions[DF_CBAN] = nullptr;
 }
 
 void DFPlayer::send_raw(uint8_t command, uint16_t payload) {
