@@ -4,7 +4,8 @@
 #include <cstring>
 #include <utility>
 
-DFPlayer::DFPlayer(std::string port) : last_call(std::chrono::system_clock::now()), serial(new Serial(std::move(port))) {
+DFPlayer::DFPlayer(std::string port) : reply_mark(false), last_call(std::chrono::system_clock::now()),
+                                       serial(new Serial(std::move(port))) {
     /* setup buffer */
     buff[0] = 0x7e;
     buff[1] = 0xff;
@@ -29,7 +30,7 @@ void DFPlayer::fill_checksum() {
 
 void DFPlayer::send_cmd(uint8_t cmd, uint16_t arg) {
     buff[3] = cmd;
-    buff[4] = 0x00;
+    buff[4] = static_cast<uint8_t > ((reply_mark) ? 0x01 : 0x00);
     buff[5] = (uint8_t) (arg>>8); // NOLINT
     buff[6] = (uint8_t) arg;
 
@@ -175,6 +176,10 @@ void DFPlayer::clearcb_any() {
     cb_functions[DF_CBAN] = nullptr;
 }
 
+void DFPlayer::set_feedback(bool get_feedback) {
+    reply_mark = get_feedback;
+}
+
 void DFPlayer::send_raw(uint8_t command, uint16_t payload) {
     send_cmd(command, payload);
 }
@@ -182,4 +187,5 @@ void DFPlayer::send_raw(uint8_t command, uint16_t payload) {
 DFPlayer::~DFPlayer() {
     delete serial;
 }
+
 

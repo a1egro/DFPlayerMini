@@ -44,6 +44,7 @@ struct __data_package_t {
 
 class DFPlayer {
 private:
+    bool reply_mark;
     uint8_t buff[10];
     std::chrono::system_clock::time_point last_call;
     __df_callable_t cb_functions[3];
@@ -98,6 +99,8 @@ public:
     void setcb_any(__df_callable_t func);
 
     void clearcb_any();
+
+    void set_feedback(bool get_feedback);
 
     void send_raw(uint8_t command, uint16_t payload);
 
