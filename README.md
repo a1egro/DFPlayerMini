@@ -5,4 +5,5 @@ It can be used combined with a FTDI (USB-Serial-Converter) via USB or directly w
  
 Hardware setup:  
 &nbsp;&nbsp;The DFPlayer is connected via UART with 3 wires (RX<->TX, TX<->RX, GND<->GND).   
-&nbsp;&nbsp;It is advised to put a 1k resistor between the TX of your UART interface and the RX of the DFPlayerMini. 
+&nbsp;&nbsp;It is advised to put a 1k resistor between the TX of your UART interface and the RX of the DFPlayerMini.  
+&nbsp;&nbsp;Furthermore the module needs a 3.3~5V power supply.
