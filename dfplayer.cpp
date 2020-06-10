@@ -184,6 +184,10 @@ void DFPlayer::send_raw(uint8_t command, uint16_t payload) {
     send_cmd(command, payload);
 }
 
+void DFPlayer::set_playbacktype(DF_PLAYBACK_TYPE type) {
+    send_cmd(0x07, static_cast<uint16_t > (type));
+}
+
 DFPlayer::~DFPlayer() {
     delete serial;
 }
