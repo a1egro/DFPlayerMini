@@ -8,6 +8,7 @@
 #include <map>
 #include "serial.h"
 
+class Serial;
 
 class CallbackContainer {
 public:

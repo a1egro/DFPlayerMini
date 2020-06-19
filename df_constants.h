@@ -5,8 +5,6 @@
 #ifndef DFPLAYERMINI_DF_CONSTANTS_H
 #define DFPLAYERMINI_DF_CONSTANTS_H
 
-#define __df_callable_t std::function<void(__recv_message_t)>
-
 // maps callback events to according places of functions in callback array
 #define DF_CBTF 0  // track finished
 #define DF_CBEO 1  // error occurred

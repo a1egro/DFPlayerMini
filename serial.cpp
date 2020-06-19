@@ -3,7 +3,6 @@
 //
 
 #include "serial.h"
-#include "callback.h"
 
 
 Serial::Serial(std::string port) : callback(nullptr) {
@@ -66,7 +65,7 @@ void Serial::read_async(int signal) {
     read(fd, &receiver.recv_buff[receiver.index++], 1);
 
     // updated if whole receiver was updated
-    if (receiver.index == 10) {
+    if (receiver.index == BUFFER_SIZE) {
         receiver.updated = true;
         receiver.index = 0;
 
@@ -90,8 +89,13 @@ void Serial::req_read() {
     receiver.updated = false;
 }
 
-uint8_t *Serial::get_rbuff() {
-    return receiver.recv_buff;
+std::shared_ptr<uint8_t> Serial::get_rbuff() {
+    // pass default delete for arrays
+    std::shared_ptr<uint8_t> rbuff_cp(new uint8_t[BUFFER_SIZE], std::default_delete<uint8_t[]>());
+
+    memcpy(rbuff_cp.get(), receiver.recv_buff, BUFFER_SIZE);
+
+    return rbuff_cp;
 }
 
 void Serial::setCallback(std::function<void(void)> func) {

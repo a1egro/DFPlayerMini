@@ -9,18 +9,19 @@
 #include <cstdlib>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <termios.h>
 #include <unistd.h>
 #include <chrono>
 #include <functional>
+#include <iostream>
+#include <cstring>
+#include <utility>
 
 #include "df_constants.h"
 #include "serial.h"
 
-#define PACKAGE_SIZE sizeof(__data_package_t)
+#define df_callable_t std::function<void(std::shared_ptr<data_package_t>)>
 
-typedef struct __data_package_t *__recv_message_t;
-struct __data_package_t {
+struct data_package_t {
     uint8_t reason;
     uint16_t payload;
 };
@@ -30,7 +31,7 @@ private:
     bool reply_mark;
     uint8_t buff[10];
     std::chrono::system_clock::time_point last_call;
-    __df_callable_t cb_functions[3];
+    df_callable_t cb_functions[3];
 
     Serial* serial;
 
@@ -40,7 +41,7 @@ private:
 
     void send_cmd(uint8_t cmd);
 
-    __data_package_t recv_payload();
+    std::shared_ptr<data_package_t> recv_payload();
 public:
     explicit DFPlayer(std::string port);
 
@@ -70,16 +71,16 @@ public:
 
     void vol_set(uint16_t volume); // TODO: range?
 
-    void setcb_trackfin(__df_callable_t func);
+    void setcb_trackfin(df_callable_t func);
 
     void clearcb_trackfin();
 
-    void setcb_erroc(__df_callable_t func);
+    void setcb_erroc(df_callable_t func);
 
     void clearcb_erroc();
 
     // callback function is called with everything the module returns if the reason is not covered by other callbacks
-    void setcb_any(__df_callable_t func);
+    void setcb_any(df_callable_t func);
 
     void clearcb_any();
 

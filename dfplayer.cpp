@@ -1,7 +1,5 @@
 #include "dfplayer.h"
 
-#include <iostream>
-#include <cstring>
 #include <utility>
 
 DFPlayer::DFPlayer(std::string port) : reply_mark(false), last_call(std::chrono::system_clock::now()),
@@ -30,7 +28,7 @@ void DFPlayer::fill_checksum() {
 
 void DFPlayer::send_cmd(uint8_t cmd, uint16_t arg) {
     buff[3] = cmd;
-    buff[4] = static_cast<uint8_t > ((reply_mark) ? 0x01 : 0x00);
+    buff[4] = (reply_mark) ? 0x01 : 0x00;
     buff[5] = (uint8_t) (arg>>8); // NOLINT
     buff[6] = (uint8_t) arg;
 
@@ -51,32 +49,32 @@ void DFPlayer::send_cmd(uint8_t cmd) {
 }
 
 // returns pointer to 4 byte large payload
-__data_package_t DFPlayer::recv_payload() {
+std::shared_ptr<data_package_t> DFPlayer::recv_payload() {
     // wait for new data to be read
     serial->req_read();
     while (!serial->has_read());                 // TODO: TIMEOUT (see: tty.c_cc[VTIME])
 
-    struct __data_package_t data;
-    uint8_t *rbuff = serial->get_rbuff();
+    auto data = std::make_shared<data_package_t>();
+    auto rbuff = serial->get_rbuff();
 
     // 4th byte specifies reason
-    data.reason = rbuff[3];
+    data->reason = rbuff.get()[3];
     // 6th and 7th are data bytes
-    data.payload = (rbuff[5])<<8 | rbuff[6];
+    data->payload = (rbuff.get()[5])<<8 | rbuff.get()[6];
 
     return data;
 }
 
 void DFPlayer::cb_caller() {
-    uint8_t *rbuff = serial->get_rbuff();
+    auto rbuff = serial->get_rbuff();
 
-    __recv_message_t msg = static_cast<__recv_message_t> (malloc(PACKAGE_SIZE));
+    auto msg = std::make_shared<data_package_t>();
     // 4th byte specifies reason
-    msg->reason = rbuff[3];
+    msg->reason = rbuff.get()[3];
     // 6th and 7th are data bytes
-    msg->payload = (rbuff[5])<<8 | rbuff[6];
+    msg->payload = (rbuff.get()[5])<<8 | rbuff.get()[6];
 
-    __df_callable_t callable = nullptr;
+    df_callable_t callable = nullptr;
 
     switch(msg->reason) {
         // track on sd card finished playing
@@ -101,9 +99,7 @@ bool DFPlayer::is_playing() {
 
     auto ans = recv_payload();
 
-    bool playing = (ans.reason == 0x42 && ans.payload == 0x100);
-
-    return playing;
+    return (ans->reason == 0x42) && (ans->payload == 0x201);
 }
 
 void DFPlayer::play() {
@@ -152,24 +148,24 @@ void DFPlayer::vol_set(uint16_t volume) {
     send_cmd(0x06, volume);
 }
 
-void DFPlayer::setcb_trackfin(__df_callable_t func) {
-    cb_functions[DF_CBTF] = func;
+void DFPlayer::setcb_trackfin(df_callable_t func) {
+    cb_functions[DF_CBTF] = std::move(func);
 }
 
 void DFPlayer::clearcb_trackfin() {
     cb_functions[DF_CBTF] = nullptr;
 }
 
-void DFPlayer::setcb_erroc(__df_callable_t func) {
-    cb_functions[DF_CBEO] = func;
+void DFPlayer::setcb_erroc(df_callable_t func) {
+    cb_functions[DF_CBEO] = std::move(func);
 }
 
 void DFPlayer::clearcb_erroc() {
     cb_functions[DF_CBEO] = nullptr;
 }
 
-void DFPlayer::setcb_any(__df_callable_t func) {
-    cb_functions[DF_CBAN] = func;
+void DFPlayer::setcb_any(df_callable_t func) {
+    cb_functions[DF_CBAN] = std::move(func);
 }
 
 void DFPlayer::clearcb_any() {
@@ -191,5 +187,3 @@ void DFPlayer::set_playbacktype(DF_PLAYBACK_TYPE type) {
 DFPlayer::~DFPlayer() {
     delete serial;
 }
-
-

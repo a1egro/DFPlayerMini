@@ -16,7 +16,12 @@
 #include <csignal>
 #include <iostream>
 #include <functional>
+#include <memory>
 
+#include "callback.h"
+
+
+#define BUFFER_SIZE 10
 
 class Serial{
 private:
@@ -28,7 +33,7 @@ private:
     struct recv_sct {
         bool updated;
         uint8_t index;
-        uint8_t recv_buff[10];
+        uint8_t recv_buff[BUFFER_SIZE];
     } receiver;
 
 public:
@@ -54,7 +59,7 @@ public:
     void req_read();
 
     // returns pointer to the 10 byte large receiver.recv_buff
-    uint8_t *get_rbuff();
+    std::shared_ptr<uint8_t> get_rbuff();
 
     // set function called when something was received
     void setCallback(std::function<void(void)>);
